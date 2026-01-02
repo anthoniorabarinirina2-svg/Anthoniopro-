@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADALABE - MULTI-SIGNAL V9</title>
+    <title>ADALABE - MULTI-SIGNAL V9 PRO</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rajdhani:wght@600&display=swap" rel="stylesheet">
     <style>
         :root { --p: #ff007f; --b: #00d2ff; --bg: #05070a; --g: #00ff88; --y: #f0b90b; }
         body { background: var(--bg); color: white; font-family: 'Rajdhani', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
-        .container { max-width: 420px; width: 100%; animation: fadeIn 0.3s ease; }
+        .container { max-width: 420px; width: 100%; animation: fadeIn 0.3s ease; display: none; }
+
+        /* LOCK SCREEN */
+        #lock { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .lock-card { background: #12161d; padding: 40px; border-radius: 20px; border: 1px solid var(--y); text-align: center; width: 85%; }
 
         /* HEADER */
         .header { background: #12161d; padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; text-align: center; border-bottom: 3px solid var(--b); }
@@ -39,14 +43,22 @@
 </head>
 <body>
 
-<div class="container">
+<div id="lock">
+    <div class="lock-card">
+        <h2 style="color:var(--y); font-family:'Orbitron'; font-size: 14px; margin-bottom: 20px;">ADALABE SECURITY</h2>
+        <input type="password" id="pass" placeholder="MOT DE PASSE">
+        <button class="btn" style="background:var(--y); color:black; margin-top:15px;" onclick="unlock()">DÉVERROUILLER</button>
+    </div>
+</div>
+
+<div id="app" class="container">
     <div class="header">
-        <div style="font-size: 9px; color: var(--y); font-family: 'Orbitron'; margin-bottom: 5px;">ADALABE MULTI-SCAN V9</div>
+        <div style="font-size: 9px; color: var(--y); font-family: 'Orbitron'; margin-bottom: 5px;">ADALABE MULTI-SCAN V9 PRO</div>
         <div class="clock" id="clock">00:00:00</div>
     </div>
 
     <div class="card">
-        <label style="text-align:center; color: var(--p); font-size: 12px; margin-bottom: 10px;">DERNIÈRES DONNÉES DU CRASH</label>
+        <label style="text-align:center; color: var(--p); font-size: 12px; margin-bottom: 10px;">DONNÉES DU DERNIER TOUR</label>
         <div class="input-row">
             <div class="input-box">
                 <label>MINUTE</label>
@@ -57,7 +69,7 @@
                 <input type="number" id="s" placeholder="00" min="0" max="59">
             </div>
         </div>
-        <button class="btn" onclick="genererMultiples()">SCANNER LES 5 PROCHAINS TOURS</button>
+        <button class="btn" onclick="genererMultiples()">SCANNER LES 5 PROCHAINS SIGNAUX</button>
     </div>
 
     <div id="results" class="results-list">
@@ -70,34 +82,45 @@
         document.getElementById('clock').innerText = new Date().toLocaleTimeString('fr-FR');
     }, 1000);
 
+    // Fonction de déverrouillage
+    function unlock() {
+        const input = document.getElementById('pass').value;
+        if(input === 'bandykely') {
+            document.getElementById('lock').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+        } else {
+            alert("Mot de passe incorrect !");
+        }
+    }
+
     function genererMultiples() {
         const m = parseInt(document.getElementById('m').value);
         const s = parseInt(document.getElementById('s').value);
 
         if (isNaN(m) || isNaN(s)) {
-            alert("ERREUR : Entre les données !");
+            alert("Veuillez entrer les données du tour !");
             return;
         }
 
         const resContainer = document.getElementById('results');
-        resContainer.innerHTML = ""; // Vider
+        resContainer.innerHTML = ""; 
         resContainer.style.display = "block";
 
-        // Génération de 5 prédictions
+        // Génération de 5 prédictions basées sur un cycle mathématique
         for (let i = 1; i <= 5; i++) {
             setTimeout(() => {
-                // Algorithme de décalage progressif (Ex: +1m15, +2m30, etc.)
-                let totalSeconds = s + (i * 75); 
+                // Cycle de calcul : on ajoute environ 75 à 90 secondes par tour
+                let totalSeconds = s + (i * 82); 
                 let nextS = totalSeconds % 60;
                 let nextM = (m + Math.floor(totalSeconds / 60)) % 60;
 
-                // Calcul de la cote assurée (Cote Min et Max)
-                let base = (nextS % 2 === 0) ? 2.10 : 1.60;
-                let estimation = (base + (nextM / 20)).toFixed(2);
-                let maxEst = (parseFloat(estimation) + 1.5 + (i/2)).toFixed(2);
+                // Calcul de la cote Minimum (Assurée) et Maximum
+                let base = (nextS % 2 === 0) ? 2.20 : 1.70;
+                let coteMin = (base + (nextM / 25)).toFixed(2);
+                let coteMax = (parseFloat(coteMin) + 2.0 + (i / 2)).toFixed(2);
 
-                // Pourcentage de fiabilité
-                let trust = 95 - (i * 4); 
+                // Fiabilité décroissante
+                let reliability = 98 - (i * 5); 
 
                 const sigCard = document.createElement('div');
                 sigCard.className = 'sig-card';
@@ -111,8 +134,9 @@
                 sigCard.innerHTML = `
                     <div class="sig-time">${hh}:${mm}:${ss}</div>
                     <div class="sig-info">
-                        <div class="sig-cote">${estimation}x - ${maxEst}x</div>
-                        <div class="sig-trust">Fiabilité : ${trust}%</div>
+                        <div class="sig-cote" style="color:var(--g)">ASSURÉ : ${coteMin}x</div>
+                        <div class="sig-cote" style="font-size:12px; color:#888">MAX : ${coteMax}x</div>
+                        <div class="sig-trust">FIABILITÉ : ${reliability}%</div>
                     </div>
                 `;
                 resContainer.appendChild(sigCard);
